@@ -8,7 +8,7 @@ import '../webclient.dart';
 class TransactionWebclient {
   Future<List<Transaction>> findAll() async {
     final Response response =
-        await client.get(baseUrl).timeout(Duration(seconds: 5));
+        await client.get(baseUrl);
 
     List<dynamic> transactionsDecode = jsonDecode(response.body);
 
@@ -23,6 +23,21 @@ class TransactionWebclient {
     final Response response = await client.post(baseUrl,
         headers: {'Content-type': 'application/json', 'password': password},
         body: transactionsJson);
-    return Transaction.fromJson(jsonDecode(response.body));
+
+    if (response.statusCode == 200) {
+      return Transaction.fromJson(jsonDecode(response.body));
+    }
+    throw HttpException(_getExceptionResponse[response.statusCode]);
   }
+
+  static final Map<int, String> _getExceptionResponse = {
+    400: "Falha 400",
+    401: "Falha 401"
+  };
+}
+
+class HttpException implements Exception {
+  final String message;
+
+  HttpException(this.message);
 }

@@ -4,7 +4,8 @@ import 'package:http_interceptor/http_client_with_interceptor.dart';
 import 'interceptors/transaction_interceptor.dart';
 
 final Client client =
-    HttpClientWithInterceptor.build(interceptors: [LoggingInterceptor()]);
+    HttpClientWithInterceptor.build(interceptors: [LoggingInterceptor()],
+    requestTimeout: (Duration(seconds: 5)));
 const String baseUrl = 'http://192.168.48.2:8080/transactions';
 
 

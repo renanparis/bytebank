@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:paris/components/response_dialog.dart';
 import 'package:paris/components/transaction_auth_dialog.dart';
 import 'package:paris/http/webclients/transaction_webclient.dart';
 import 'package:paris/models/contact.dart';
@@ -59,22 +63,22 @@ class _TransactionFormState extends State<TransactionForm> {
                 child: SizedBox(
                   width: double.maxFinite,
                   child: RaisedButton(
-                    child: Text('Transfer'), onPressed: () {
-                    final double value = double.tryParse(_valueController.text);
-                    final transactionCreated = Transaction(
-                        value, widget.contact);
-                    showDialog(context: context, builder: (context) {
-                      return TransactionAuthDialog(
-                        onConfirm: (String password) {
-                          _webclient.save(transactionCreated, password).then((
-                              transaction) {
-                            if (transactionCreated != null) {
-                              Navigator.pop(context);
-                            }
+                    child: Text('Transfer'),
+                    onPressed: () {
+                      final double value =
+                      double.tryParse(_valueController.text);
+                      final transactionCreated =
+                      Transaction(value, widget.contact);
+                      showDialog(
+                          context: context,
+                          builder: (contextDialog) {
+                            return TransactionAuthDialog(
+                              onConfirm: (String password) {
+                                _save(transactionCreated, password, context);
+                              },
+                            );
                           });
-                        },);
-                    });
-                  },
+                    },
                   ),
                 ),
               )
@@ -83,5 +87,46 @@ class _TransactionFormState extends State<TransactionForm> {
         ),
       ),
     );
+  }
+
+  void _save(Transaction transactionCreated, String password,
+      BuildContext context) async {
+    Transaction transaction =
+    await _send(transactionCreated, password, context);
+    await _showSuccessfulMessage(transaction, context);
+  }
+
+  Future _showSuccessfulMessage(Transaction transaction,
+      BuildContext context) async {
+    if (transaction != null) {
+      await showDialog(
+          context: context,
+          builder: (contextDialog) {
+            return SuccessDialog("Successful Transaction");
+          });
+      Navigator.pop(context);
+    }
+  }
+
+  Future<Transaction> _send(Transaction transactionCreated, String password,
+      BuildContext context) async {
+    final Transaction transaction =
+    await _webclient.save(transactionCreated, password).catchError((e) {
+      _showFailureMessage(context, message: e.message);
+    }, test: (e) => e is HttpException).catchError((e) {
+      _showFailureMessage(context, message: 'time out');
+    }, test: (e) => e is TimeoutException).catchError((e) {
+      _showFailureMessage(context);
+    }, test: (e) => e is Exception);
+    return transaction;
+  }
+
+  void _showFailureMessage(BuildContext context,
+      {String message = "unknow error"}) {
+    showDialog(
+        context: context,
+        builder: (contextDialog) {
+          return FailureDialog(message);
+        });
   }
 }
