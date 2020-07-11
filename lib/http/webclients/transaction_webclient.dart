@@ -20,6 +20,8 @@ class TransactionWebclient {
   Future<Transaction> save(Transaction transaction, String password) async {
     final String transactionsJson = jsonEncode(transaction.toJson());
 
+    await Future.delayed(Duration(seconds: 10));
+
     final Response response = await client.post(baseUrl,
         headers: {'Content-type': 'application/json', 'password': password},
         body: transactionsJson);
@@ -27,14 +29,22 @@ class TransactionWebclient {
     if (response.statusCode == 200) {
       return Transaction.fromJson(jsonDecode(response.body));
     }
-    throw HttpException(_getExceptionResponse[response.statusCode]);
+    throw HttpException(_getMessage(response.statusCode));
   }
 
-  static final Map<int, String> _getExceptionResponse = {
-    400: "Falha 400",
-    401: "Falha 401"
-  };
-}
+  String _getMessage(int statusCode) {
+
+    if(_getExceptionResponse.containsKey(statusCode)){
+      return _getExceptionResponse[statusCode];
+    }
+    return "Unknon Error";
+  }
+    static final Map<int, String> _getExceptionResponse = {
+      400: "Falha 400",
+      401: "Falha 401",
+      409: "Transaction always exist"
+    };
+  }
 
 class HttpException implements Exception {
   final String message;
